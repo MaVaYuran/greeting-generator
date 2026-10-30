@@ -1,12 +1,14 @@
-import { Cake, PartyPopper, Snowflake } from 'lucide-react';
+import { Cake, Snowflake, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { OccasionType, ToneType, type LanguageType } from './types';
-import { LANGUAGES } from './constants-l';
-import { generateGreeting } from './services/gemini-service';
+import { generateGreeting, generateGreetingImage } from './services/gemini-service';
 import Header from './components/Header';
 import AppTitle from './components/AppTitle';
 import { OccasionButton } from './components/OccasionButton';
 import { UserDetailsSection } from './components/UserDetailsSection';
+import { ExtraDetailsSection } from './components/ExtraDetailsSection';
+import { GenerateButton } from './components/GenerateButon';
+import { ResultSection } from './components/ResultSection';
 
 function App() {
   const [occasion, setOccasion] = useState<OccasionType>(OccasionType.BIRTHDAY);
@@ -16,6 +18,8 @@ function App() {
   const [tone, setTone] = useState<ToneType>(ToneType.OFICCIAL);
   const [language, setLanguage] = useState<LanguageType>('Polski');
   const [generatedText, setGeneratedText] = useState<string>('');
+  const [generatedImageURL, setGeneratedImageURL] = useState<string | null>(null);
+  const [isImageEnabled, setIsImageEnabled] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,10 +31,22 @@ function App() {
     setError(null);
     setLoading(true);
     setGeneratedText('');
+    setGeneratedImageURL(null);
 
     try {
-      const result = await generateGreeting(occasion, name, age, interests, tone, language);
-      setGeneratedText(result);
+      const tasks: Promise<any>[] = [
+        generateGreeting(occasion, name, age, interests, tone, language),
+      ];
+      if (isImageEnabled) {
+        tasks.push(generateGreetingImage(occasion, tone, interests));
+      }
+
+      const results = await Promise.all(tasks);
+      const textResult = results[0];
+      setGeneratedText(textResult);
+      if (isImageEnabled && results[1]) {
+        setGeneratedImageURL(results[1]);
+      }
     } catch (err: any) {
       setError(err.message || 'Произошла ошибка');
     } finally {
@@ -78,37 +94,40 @@ function App() {
                 name={name}
                 age={age}
                 interests={interests}
+                error={error}
                 setName={setName}
                 setAge={setAge}
                 setInterests={setInterests}
-                error={error}
                 setError={setError}
               />
+              <ExtraDetailsSection
+                error={error}
+                language={language}
+                selectedTone={tone}
+                isImageEnabled={isImageEnabled}
+                setIsImageEnabled={setIsImageEnabled}
+                setTone={setTone}
+                setLanguage={setLanguage}
+              />
+              <GenerateButton onClick={handleGenerate} isLoading={loading}>
+                <Sparkles
+                  className={`w-5 h-5 ${loading ? 'animate-spin' : 'group-hover:animate-pulse'}`}
+                />
+                {loading ? 'Сочиняем...' : 'Сгенерировать'}
+              </GenerateButton>
             </div>
             {/* Правая колонка */}
-            <div className="lg:col-span-7 h-full"></div>
+            <div className="lg:col-span-7 h-full">
+              <ResultSection
+                isLoading={loading}
+                content={generatedText}
+                imageURL={generatedImageURL}
+              />
+            </div>
+            {/* <div className="lg:col-span-7 h-full">{generatedText}</div> */}
           </div>
 
           <br />
-          {Object.values(ToneType).map(tone => (
-            <button key={tone} onClick={() => setTone(tone)}>
-              {tone}
-            </button>
-          ))}
-          <br />
-          <select value={language} onChange={e => setLanguage(e.target.value as LanguageType)}>
-            {LANGUAGES.map(lang => (
-              <option value={lang} key={lang}>
-                {lang}
-              </option>
-            ))}
-          </select>
-          <hr />
-          {error}
-          <br />
-          <button onClick={handleGenerate} disabled={loading}>
-            СОЗДАТЬ МАГИЮ
-          </button>
         </div>
       </main>
     </div>

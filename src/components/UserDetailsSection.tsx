@@ -54,9 +54,7 @@ export const UserDetailsSection: FC<IUserDetailSectionProps> = ({
           </div>
         </div>
         <div className="col-span-1 relative group">
-          <label htmlFor="" className="block text-sm font-medium text-gray-700 mb-1 ml-1">
-            Возраст
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-1 ml-1">Возраст</label>
           <div className="relative">
             <div className="absolute inset-y-0 pl-3 left-0 flex items-center pointer-events-none">
               <Calendar className="h-4 w-4 text-gray-400 group-focus-within:text-purple-500 transition-colors" />

@@ -55,3 +55,40 @@ export const generateGreeting = async (
     throw new Error('[generateGreeting] Ошибка генерации');
   }
 };
+
+export const generateGreetingImage = async (
+  occasion: OccasionType,
+  tone: ToneType,
+  interests?: string,
+): Promise<string | null> => {
+  try {
+    const prompt = `
+    High quality digital illustration for greeting card.
+    Occasion:${occasion},
+    Mood/Tone: ${tone}  
+     ${interests ? `Themes/Interests:${interests}` : ''}.
+    Style: colorful,atristic, high resolution, aesthetically pleasing.
+    No text in image.
+   `;
+    const response = await ai.models.generateContent({
+      model: 'gemini-nano-banana-2.1',
+      contents: prompt,
+      config: {
+        imageConfig: {
+          aspectRatio: '4:3',
+        },
+      },
+    });
+
+    for (const part of response.candidates?.[0]?.content?.parts || []) {
+      if (part.inlineData) {
+        const base64EncodingString = part.inlineData.data;
+        return `data:image/png;base64,${base64EncodingString}`;
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error('Gemini image API error', error);
+    return null;
+  }
+};
